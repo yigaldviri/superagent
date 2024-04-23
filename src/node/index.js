@@ -469,7 +469,6 @@ Request.prototype._pipeContinue = function (stream, options) {
       res.pipe(stream, options);
       res.once('end', () => this.emit('end'));
     }
-
   });
   return stream;
 };
@@ -1093,7 +1092,7 @@ Request.prototype._end = function () {
         parser = exports.parse.image; // It's actually a generic Buffer
         buffer = true;
       } else if (multipart) {
-        const form = formidable();
+        const form = formidable.formidable();
         parser = form.parse.bind(form);
         buffer = true;
       } else if (isBinary(mime)) {
@@ -1162,6 +1161,31 @@ Request.prototype._end = function () {
           }
 
           if (parserHandlesEnd) {
+            if (multipart) {
+              // formidable v3 always returns an array with the value in it
+              // so we need to flatten it
+              if (object) {
+                for (const key in object) {
+                  const value = object[key];
+                  if (Array.isArray(value) && value.length === 1) {
+                    object[key] = value[0];
+                  } else {
+                    object[key] = value;
+                  }
+                }
+              }
+
+              if (files) {
+                for (const key in files) {
+                  const value = files[key];
+                  if (Array.isArray(value) && value.length === 1) {
+                    files[key] = value[0];
+                  } else {
+                    files[key] = value;
+                  }
+                }
+              }
+            }
             this.emit('end');
             this.callback(null, this._emitResponse(object, files));
           }
