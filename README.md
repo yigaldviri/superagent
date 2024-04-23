@@ -112,7 +112,7 @@ If you are using [browserify][], [webpack][], [rollup][], or another bundler, th
 
 ## Supported Platforms
 
-* Node: v6.x+
+* Node: v14.18.0+
 * Browsers (see [.browserslistrc](.browserslistrc)):
 
   ```sh
