@@ -1124,7 +1124,7 @@ Request.prototype._end = function () {
     let parserHandlesEnd = false;
     if (buffer) {
       // Protectiona against zip bombs and other nuisance
-      let responseBytesLeft = this._maxResponseSize || 200_000_000;
+      let responseBytesLeft = this._maxResponseSize || 200000000;
       res.on('data', (buf) => {
         responseBytesLeft -= buf.byteLength || buf.length > 0 ? buf.length : 0;
         if (responseBytesLeft < 0) {
