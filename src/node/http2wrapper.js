@@ -2,8 +2,6 @@ const http2 = require('http2');
 const Stream = require('stream');
 const net = require('net');
 const tls = require('tls');
-// eslint-disable-next-line node/no-deprecated-api
-const { parse } = require('url');
 
 const {
   HTTP2_HEADER_PATH,
@@ -145,7 +143,7 @@ class Request extends Stream {
         case HTTP2_HEADER_HOST:
           key = HTTP2_HEADER_AUTHORITY;
           value = /^http:\/\/|^https:\/\//.test(value)
-            ? parse(value).host
+            ? new URL(value).host
             : value;
           break;
         default:

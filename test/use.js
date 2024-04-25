@@ -88,7 +88,7 @@ describe('subclass', () => {
     NewRequest.prototype = Object.create(OriginalRequest.prototype);
     request.Request = NewRequest;
 
-    const request_ = request.agent().del('/');
+    const request_ = request.agent().del('http://test.com/');
     assert(request_ instanceof NewRequest);
     assert(request_ instanceof OriginalRequest);
   });
