@@ -2,8 +2,7 @@
  * Module dependencies.
  */
 
-// eslint-disable-next-line node/no-deprecated-api
-const { parse, format, resolve } = require('url');
+const { format } = require('url');
 const Stream = require('stream');
 const https = require('https');
 const http = require('http');
@@ -503,7 +502,7 @@ Request.prototype._redirect = function (res) {
   debug('redirect %s -> %s', this.url, url);
 
   // location
-  url = resolve(this.url, url);
+  url = new URL(url, this.url).href;
 
   // ensure the response is being consumed
   // this is required for Node v0.10+
@@ -511,7 +510,7 @@ Request.prototype._redirect = function (res) {
 
   let headers = this.req.getHeaders ? this.req.getHeaders() : this.req._headers;
 
-  const changesOrigin = parse(url).host !== parse(this.url).host;
+  const changesOrigin = new URL(url).host !== new URL(this.url).host;
 
   // implementation of 302 following defacto standard
   if (res.statusCode === 301 || res.statusCode === 302) {
@@ -695,43 +694,24 @@ Request.prototype.request = function () {
     return this.emit('error', err);
   }
 
-  let { url } = this;
+  let { url: urlString } = this;
   const retries = this._retries;
 
-  // Capture backticks as-is from the final query string built above.
-  // Note: this'll only find backticks entered in req.query(String)
-  // calls, because qs.stringify unconditionally encodes backticks.
-  let queryStringBackticks;
-  if (url.includes('`')) {
-    const queryStartIndex = url.indexOf('?');
-
-    if (queryStartIndex !== -1) {
-      const queryString = url.slice(queryStartIndex + 1);
-      queryStringBackticks = queryString.match(/`|%60/g);
-    }
-  }
-
   // default to http://
-  if (url.indexOf('http') !== 0) url = `http://${url}`;
-  url = parse(url);
-
-  // See https://github.com/ladjs/superagent/issues/1367
-  if (queryStringBackticks) {
-    let i = 0;
-    url.query = url.query.replace(/%60/g, () => queryStringBackticks[i++]);
-    url.search = `?${url.query}`;
-    url.path = url.pathname + url.search;
-  }
+  if (urlString.indexOf('http') !== 0) urlString = `http://${urlString}`;
+  const url = new URL(urlString);
+  let { protocol } = url;
+  let path = `${url.pathname}${url.search}`;
 
   // support unix sockets
-  if (/^https?\+unix:/.test(url.protocol) === true) {
+  if (/^https?\+unix:/.test(protocol) === true) {
     // get the protocol
-    url.protocol = `${url.protocol.split('+')[0]}:`;
+    protocol = `${protocol.split('+')[0]}:`;
 
-    // get the socket, path
-    const unixParts = url.path.match(/^([^/]+)(.+)$/);
-    options.socketPath = unixParts[1].replace(/%2F/g, '/');
-    url.path = unixParts[2];
+    // get the socket path
+    options.socketPath = url.hostname.replace(/%2F/g, '/');
+    url.host = '';
+    url.hostname = '';
   }
 
   // Override IP address of a hostname
@@ -772,7 +752,7 @@ Request.prototype.request = function () {
   // options
   options.method = this.method;
   options.port = url.port;
-  options.path = url.path;
+  options.path = path;
   options.host = url.hostname;
   options.ca = this._ca;
   options.key = this._key;
@@ -800,8 +780,8 @@ Request.prototype.request = function () {
 
   // initiate request
   const module_ = this._enableHttp2
-    ? exports.protocols['http2:'].setProtocol(url.protocol)
-    : exports.protocols[url.protocol];
+    ? exports.protocols['http2:'].setProtocol(protocol)
+    : exports.protocols[protocol];
 
   // request
   this.req = module_.request(options);
@@ -814,7 +794,7 @@ Request.prototype.request = function () {
     req.setHeader('Accept-Encoding', 'gzip, deflate');
   }
 
-  this.protocol = url.protocol;
+  this.protocol = protocol;
   this.host = url.host;
 
   // expose events
@@ -837,9 +817,8 @@ Request.prototype.request = function () {
   });
 
   // auth
-  if (url.auth) {
-    const auth = url.auth.split(':');
-    this.auth(auth[0], auth[1]);
+  if (url.username || url.password) {
+    this.auth(url.username, url.password);
   }
 
   if (this.username && this.password) {
