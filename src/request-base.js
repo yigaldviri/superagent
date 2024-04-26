@@ -1,5 +1,3 @@
-const semver = require('semver');
-
 /**
  * Module of mixed-in functions shared between node and client code
  */
@@ -481,28 +479,6 @@ RequestBase.prototype.abort = function () {
   this._aborted = true;
   if (this.xhr) this.xhr.abort(); // browser
   if (this.req) {
-    // Node v13 has major differences in `abort()`
-    // https://github.com/nodejs/node/blob/v12.x/lib/internal/streams/end-of-stream.js
-    // https://github.com/nodejs/node/blob/v13.x/lib/internal/streams/end-of-stream.js
-    // https://github.com/nodejs/node/blob/v14.x/lib/internal/streams/end-of-stream.js
-    // (if you run a diff across these you will see the differences)
-    //
-    // References:
-    // <https://github.com/nodejs/node/issues/31630>
-    // <https://github.com/ladjs/superagent/pull/1084/commits/dc18679a7c5ccfc6046d882015e5126888973bc8>
-    //
-    // Thanks to @shadowgate15 and @niftylettuce
-    if (
-      semver.gte(process.version, 'v13.0.0') &&
-      semver.lt(process.version, 'v14.0.0')
-    ) {
-      // Note that the reason this doesn't work is because in v13 as compared to v14
-      // there is no `callback = nop` set in end-of-stream.js above
-      throw new Error(
-        'Superagent does not work in v13 properly with abort() due to Node.js core changes'
-      );
-    }
-
     this.req.abort(); // node
   }
 

@@ -16,19 +16,15 @@ const FormData = require('form-data');
 const formidable = require('formidable');
 const debug = require('debug')('superagent');
 const CookieJar = require('cookiejar');
-const semverGte = require('semver/functions/gte');
 const safeStringify = require('fast-safe-stringify');
 
 const utils = require('../utils');
 const RequestBase = require('../request-base');
+const http2 = require('./http2wrapper');
 const { unzip } = require('./unzip');
 const Response = require('./response');
 
 const { mixin, hasOwn } = utils;
-
-let http2;
-
-if (semverGte(process.version, 'v10.10.0')) http2 = require('./http2wrapper');
 
 function request(method, url) {
   // callback
