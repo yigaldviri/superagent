@@ -1,5 +1,5 @@
 const assert = require('assert');
-const URL = require('url');
+const { format } = require('url');
 const request = require('../support/client');
 const getSetup = require('../support/setup');
 
@@ -14,11 +14,12 @@ describe('Basic auth', () => {
 
   describe('when credentials are present in url', () => {
     it('should set Authorization', (done) => {
-      const new_url = URL.parse(base);
-      new_url.auth = 'tobi:learnboost';
+      const new_url = new URL(base);
+      new_url.username = 'tobi';
+      new_url.password = 'learnboost';
       new_url.pathname = '/basic-auth';
 
-      request.get(URL.format(new_url)).end((error, res) => {
+      request.get(format(new_url)).end((error, res) => {
         assert.equal(res.status, 200);
         done();
       });

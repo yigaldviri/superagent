@@ -1,6 +1,5 @@
 'use strict';
 
-const URL = require('url');
 const assert = require('assert');
 const getSetup = require('../support/setup');
 const request = require('../support/client');
@@ -112,7 +111,7 @@ describe('request', () => {
 
     it('should follow Location with IP override', () => {
       const redirects = [];
-      const url = URL.parse(base);
+      const url = new URL(base);
       return request
         .get(`http://redir.example.com:${url.port || '80'}${url.pathname}`)
         .connect({
@@ -130,7 +129,7 @@ describe('request', () => {
 
     it('should follow Location with IP:port override', () => {
       const redirects = [];
-      const url = URL.parse(base);
+      const url = new URL(base);
       return request
         .get(`http://redir.example.com:9999${url.pathname}`)
         .connect({

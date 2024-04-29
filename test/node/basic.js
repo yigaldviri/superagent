@@ -4,7 +4,6 @@ const assert = require('assert');
 const fs = require('fs');
 const { EventEmitter } = require('events');
 const { StringDecoder } = require('string_decoder');
-const url = require('url');
 const getSetup = require('../support/setup');
 const request = require('../support/client');
 
@@ -30,7 +29,7 @@ describe('[node] request', () => {
 
   describe('with an object', () => {
     it('should format the url', () =>
-      request.get(url.parse(`${base}/login`)).then((res) => {
+      request.get(new URL(`${base}/login`)).then((res) => {
         assert.ok(res.ok);
       }));
   });

@@ -4,7 +4,6 @@ if (!process.env.HTTP2_TEST) {
 }
 
 const assert = require('assert');
-const url = require('url');
 const request = require('../..');
 const getSetup = require('../support/setup');
 
@@ -29,7 +28,7 @@ describe('request.get().http2()', () => {
 
   it('should format the url', () =>
     request
-      .get(url.parse(`${base}/login`))
+      .get(new URL(`${base}/login`))
       .http2()
       .then((res) => {
         assert(res.ok);

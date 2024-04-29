@@ -2,7 +2,6 @@
 
 const assert = require('assert');
 
-const url = require('url');
 const https = require('https');
 const fs = require('fs');
 const express = require('../support/express');
@@ -128,7 +127,7 @@ describe('https', () => {
           assert.ifError(error);
           assert(res.ok);
           assert.strictEqual('Safe and secure!', res.text);
-          agent.get(url.parse(testEndpoint)).end((error, res) => {
+          agent.get(new URL(testEndpoint)).end((error, res) => {
             assert.ifError(error);
             assert(res.ok);
             assert.strictEqual('Safe and secure!', res.text);
@@ -221,7 +220,7 @@ describe('https', () => {
           assert.ifError(error);
           assert(res.ok);
           assert.strictEqual('Safe and secure!', res.text);
-          agent.get(url.parse(testEndpoint)).end((error, res) => {
+          agent.get(new URL(testEndpoint)).end((error, res) => {
             assert.ifError(error);
             assert(res.ok);
             assert.strictEqual('Safe and secure!', res.text);
@@ -235,7 +234,7 @@ describe('https', () => {
           assert.ifError(error);
           assert(res.ok);
           assert.strictEqual('Safe and secure!', res.text);
-          agent.get(url.parse(testEndpoint)).end((error, res) => {
+          agent.get(new URL(testEndpoint)).end((error, res) => {
             assert.ifError(error);
             assert(res.ok);
             assert.strictEqual('Safe and secure!', res.text);
