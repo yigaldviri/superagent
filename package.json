@@ -6,7 +6,8 @@
   "browser": {
     "./src/node/index.js": "./src/client.js",
     "./lib/node/index.js": "./lib/client.js",
-    "./test/support/server.js": "./test/support/blank.js"
+    "./test/support/server.js": "./test/support/blank.js",
+    "re2": false
   },
   "bugs": {
     "url": "https://github.com/ladjs/superagent/issues"
@@ -26,7 +27,8 @@
     "formidable": "^3.5.1",
     "methods": "^1.1.2",
     "mime": "2.6.0",
-    "qs": "^6.11.0"
+    "qs": "^6.11.0",
+    "re2": "^1.21.3"
   },
   "devDependencies": {
     "@babel/cli": "^7.20.7",
@@ -62,7 +64,7 @@
     "rimraf": "3",
     "should": "^13.2.3",
     "should-http": "^0.1.1",
-    "tinyify": "3.0.0",
+    "tinyify": "4.0.0",
     "xo": "^0.53.1",
     "zuul": "^3.12.0"
   },

@@ -36,8 +36,21 @@ app.get('/binary', (request_, res) => {
     res.send(buf);
   });
 });
+
+app.get('/binary-brotli', (request_, res) => {
+  zlib.brotliCompress(subject, (error, buf) => {
+    res.set('Content-Encoding', 'br');
+    res.send(buf);
+  });
+});
+
 app.get('/corrupt', (request_, res) => {
   res.set('Content-Encoding', 'gzip');
+  res.send('blah');
+});
+
+app.get('/corrupt-brotli', (request_, res) => {
+  res.set('Content-Encoding', 'br');
   res.send('blah');
 });
 
@@ -45,6 +58,13 @@ app.get('/nocontent', (request_, res, next) => {
   res.statusCode = 204;
   res.set('Content-Type', 'text/plain');
   res.set('Content-Encoding', 'gzip');
+  res.send('');
+});
+
+app.get('/nocontent-brotli', (request_, res, next) => {
+  res.statusCode = 204;
+  res.set('Content-Type', 'text/plain');
+  res.set('Content-Encoding', 'br');
   res.send('');
 });
 
@@ -65,10 +85,27 @@ app.get('/junk', (request_, res) => {
   });
 });
 
+app.get('/junk-brotli', (request_, res) => {
+  zlib.brotliCompress(subject, (error, buf) => {
+    res.set('Content-Type', 'text/plain');
+    res.set('Content-Encoding', 'br');
+    res.write(buf);
+    res.end(' 0 junk');
+  });
+});
+
 app.get('/chopped', (request_, res) => {
   zlib.deflate(`${subject}123456`, (error, buf) => {
     res.set('Content-Type', 'text/plain');
     res.set('Content-Encoding', 'gzip');
+    res.send(buf.slice(0, -1));
+  });
+});
+
+app.get('/chopped-brotli', (request_, res) => {
+  zlib.brotliCompress(`${subject}123456`, (error, buf) => {
+    res.set('Content-Type', 'text/plain');
+    res.set('Content-Encoding', 'br');
     res.send(buf.slice(0, -1));
   });
 });
@@ -106,8 +143,25 @@ describe('zlib', () => {
     });
   });
 
+  it('should ignore trailing junk-brotli', (done) => {
+    request.get(`${base}/junk-brotli`).end((error, res) => {
+      res.should.have.status(200);
+      res.text.should.equal(subject);
+      done();
+    });
+  });
+
   it('should ignore missing data', (done) => {
     request.get(`${base}/chopped`).end((error, res) => {
+      assert.equal(undefined, error);
+      res.should.have.status(200);
+      res.text.should.startWith(subject);
+      done();
+    });
+  });
+
+  it('should ignore missing brotli data', (done) => {
+    request.get(`${base}/chopped-brotli`).end((error, res) => {
       assert.equal(undefined, error);
       res.should.have.status(200);
       res.text.should.startWith(subject);
@@ -123,8 +177,26 @@ describe('zlib', () => {
     });
   });
 
+  it('should handle brotli corrupted responses', (done) => {
+    request.get(`${base}/corrupt-brotli`).end((error, res) => {
+      res.text.should.equal('');
+      done();
+    });
+  });
+
   it('should handle no content with gzip header', (done) => {
     request.get(`${base}/nocontent`).end((error, res) => {
+      assert.ifError(error);
+      assert(res);
+      res.should.have.status(204);
+      res.text.should.equal('');
+      res.headers.should.not.have.property('content-length');
+      done();
+    });
+  });
+
+  it('should handle no content with gzip header', (done) => {
+    request.get(`${base}/nocontent-brotli`).end((error, res) => {
       assert.ifError(error);
       assert(res);
       res.should.have.status(204);
@@ -138,6 +210,18 @@ describe('zlib', () => {
     it('should buffer if asked', () => {
       return request
         .get(`${base}/binary`)
+        .buffer(true)
+        .then((res) => {
+          res.should.have.status(200);
+          assert(res.headers['content-length']);
+          assert(res.body.byteLength);
+          assert.equal(subject, res.body.toString());
+        });
+    });
+
+    it('should buffer Brotli if asked', () => {
+      return request
+        .get(`${base}/binary-brotli`)
         .buffer(true)
         .then((res) => {
           res.should.have.status(200);
