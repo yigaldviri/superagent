@@ -39,3 +39,111 @@ describe('utils.parseLinks(str)', () => {
     );
   });
 });
+
+describe('utils.isGzipOrDeflateEncoding(res)', () => {
+  it('should return true when content encoding is gzip', () => {
+    utils.isGzipOrDeflateEncoding({
+      headers: {
+        'content-encoding': 'gzip',
+      },
+    }).should.equal(true);
+  });
+  it('should return true when content encoding is deflate', () => {
+    utils.isGzipOrDeflateEncoding({
+      headers: {
+        'content-encoding': 'deflate',
+      },
+    }).should.equal(true);
+  });
+  it('should return false when content encoding is bla', () => {
+    utils.isGzipOrDeflateEncoding({
+      headers: {
+        'content-encoding': 'bla',
+      },
+    }).should.equal(false);
+  });
+  
+  it('should return true when content encoding has a lot of spaces followed with gzip', () => {
+    utils.isGzipOrDeflateEncoding({
+      headers: {
+        'content-encoding': " " * 10**6 + " gzip",
+      },
+    }).should.equal(false);
+  });
+  
+  it('should return true when content encoding repeates it self', () => {
+    utils.isGzipOrDeflateEncoding({
+      headers: {
+        'content-encoding': "gzip deflate gzip deflate gzip deflate gzip deflate gzip deflate gzip deflate gzip deflate gzip deflate",
+      },
+    }).should.equal(false);
+  });
+  
+  it('should return true when content encoding repeates it self wuth a lot of spaces', () => {
+    utils.isGzipOrDeflateEncoding({
+      headers: {
+        'content-encoding': " gzip   deflate   gzip   deflate   gzip   deflate   gzip   deflate   gzip   deflate   gzip   deflate",
+      },
+    }).should.equal(false);
+  });
+  
+  it('should return true when content encoding - nested patterns', () => {
+    utils.isGzipOrDeflateEncoding({
+      headers: {
+        'content-encoding': " " * 10**5 + ("gzip deflate " * 1000)
+      },
+    }).should.equal(false);
+  });
+
+  
+});
+
+describe('utils.isBrotliEncoding(res)', () => {
+  it('should return true when content encoding is br', () => {
+    utils.isBrotliEncoding({
+      headers: {
+        'content-encoding': 'br',
+      },
+    }).should.equal(true);
+  });
+  it('should return false when content encoding is bla', () => {
+    utils.isBrotliEncoding({
+      headers: {
+        'content-encoding': 'bla',
+      },
+    }).should.equal(false);
+  });
+  
+  it('should return true when content encoding has a lot of spaces followed with br', () => {
+    utils.isBrotliEncoding({
+      headers: {
+        'content-encoding': " " * 10**6 + " br",
+      },
+    }).should.equal(false);
+  });
+  
+  it('should return true when content encoding repeates it self', () => {
+    utils.isBrotliEncoding({
+      headers: {
+        'content-encoding': " br br br br br  br br br br br  br br br br br br br br br br  br br br br br  br br br br br",
+      },
+    }).should.equal(false);
+  });
+  
+  it('should return true when content encoding repeates it self wuth a lot of spaces', () => {
+    utils.isBrotliEncoding({
+      headers: {
+        'content-encoding': "br     br     br     br     br     br     br     br     br     br     br     br     br     br",
+      },
+    }).should.equal(false);
+  });
+  
+  it('should return true when content encoding - nested patterns', () => {
+    utils.isBrotliEncoding({
+      headers: {
+        'content-encoding': " " * 10**5 + ("br " * 1000)
+      },
+    }).should.equal(false);
+  });
+  
+});

@@ -21,10 +21,11 @@ const safeStringify = require('fast-safe-stringify');
 const utils = require('../utils');
 const RequestBase = require('../request-base');
 const http2 = require('./http2wrapper');
-const { unzip } = require('./unzip');
+const { decompress } = require('./unzip');
 const Response = require('./response');
 
-const { mixin, hasOwn } = utils;
+const { mixin, hasOwn, isBrotliEncoding, isGzipOrDeflateEncoding } = utils;
+const { chooseDecompresser } = require('./decompress');
 
 function request(method, url) {
   // callback
@@ -446,9 +447,11 @@ Request.prototype._pipeContinue = function (stream, options) {
     this._emitResponse();
     if (this._aborted) return;
 
-    if (this._shouldUnzip(res)) {
-      const unzipObject = zlib.createUnzip();
-      unzipObject.on('error', (error) => {
+    if (this._shouldDecompress(res)) {
+
+      let decompresser = chooseDecompresser(res);
+
+      decompresser.on('error', (error) => {
         if (error && error.code === 'Z_BUF_ERROR') {
           // unexpected end of file is ignored by browsers and curl
           stream.emit('end');
@@ -457,9 +460,9 @@ Request.prototype._pipeContinue = function (stream, options) {
 
         stream.emit('error', error);
       });
-      res.pipe(unzipObject).pipe(stream, options);
-      // don't emit 'end' until unzipObject has completed writing all its data.
-      unzipObject.once('end', () => this.emit('end'));
+      res.pipe(decompresser).pipe(stream, options);
+      // don't emit 'end' until decompresser has completed writing all its data.
+      decompresser.once('end', () => this.emit('end'));
     } else {
       res.pipe(stream, options);
       res.once('end', () => this.emit('end'));
@@ -1045,8 +1048,8 @@ Request.prototype._end = function () {
     }
 
     // zlib support
-    if (this._shouldUnzip(res)) {
-      unzip(req, res);
+    if (this._shouldDecompress(res)) {
+      decompress(req, res);
     }
 
     let buffer = this._buffer;
@@ -1275,21 +1278,10 @@ Request.prototype._end = function () {
 };
 
 // Check whether response has a non-0-sized gzip-encoded body
-Request.prototype._shouldUnzip = (res) => {
-  if (res.statusCode === 204 || res.statusCode === 304) {
-    // These aren't supposed to have any body
-    return false;
-  }
-
-  // header content is a string, and distinction between 0 and no information is crucial
-  if (res.headers['content-length'] === '0') {
-    // We know that the body is empty (unfortunately, this check does not cover chunked encoding)
-    return false;
-  }
-
-  // console.log(res);
-  return /^\s*(?:deflate|gzip)\s*$/.test(res.headers['content-encoding']);
+Request.prototype._shouldDecompress = (res) => {
+  return hasNonEmptyResponseContent(res) && (isGzipOrDeflateEncoding(res) || isBrotliEncoding(res));
 };
+
 
 /**
  * Overrides DNS for selected hostnames. Takes object mapping hostnames to IP addresses.
@@ -1410,4 +1402,19 @@ function isJSON(mime) {
 
 function isRedirect(code) {
   return [301, 302, 303, 305, 307, 308].includes(code);
+}
+
+function hasNonEmptyResponseContent(res) {
+  if (res.statusCode === 204 || res.statusCode === 304) {
+    // These aren't supposed to have any body
+    return false;
+  }
+
+  // header content is a string, and distinction between 0 and no information is crucial
+  if (res.headers['content-length'] === '0') {
+    // We know that the body is empty (unfortunately, this check does not cover chunked encoding)
+    return false;
+  }
+
+  return true;
 }
